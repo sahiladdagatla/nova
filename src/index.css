@@ -1,0 +1,66 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", sans-serif;
+  --font-mono: "Space Grotesk", monospace; /* Headings often use technical mono look in this design */
+
+  --color-surface-lowest: #0e0e13;
+  --color-surface-low: #1b1b20;
+  --color-surface: #131318;
+  --color-surface-high: #2a292f;
+  --color-surface-highest: #35343a;
+
+  --color-primary-container: #7c3aed;
+  --color-secondary-container: #03b5d3;
+  
+  --animate-glitch: glitch 3s infinite;
+  --animate-scan: scan 2s linear infinite;
+  --animate-blink: blink 1s infinite;
+
+  @keyframes glitch {
+    0% { transform: translate(0); clip-path: inset(40% 0 61% 0); }
+    20% { transform: translate(-2px, 2px); clip-path: inset(92% 0 1% 0); }
+    40% { transform: translate(-2px, -2px); clip-path: inset(43% 0 1% 0); }
+    60% { transform: translate(2px, 2px); clip-path: inset(25% 0 58% 0); }
+    80% { transform: translate(2px, -2px); clip-path: inset(54% 0 7% 0); }
+    100% { transform: translate(0); clip-path: inset(58% 0 43% 0); }
+  }
+
+  @keyframes scan {
+    0% { top: -100%; }
+    100% { top: 100%; }
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+}
+
+@layer base {
+  body {
+    @apply bg-surface text-[#e4e1e9] font-sans selection:bg-primary-container/30 selection:text-white;
+    overflow-x: hidden;
+  }
+}
+
+@layer components {
+  .glass-panel {
+    @apply bg-white/[0.03] backdrop-blur-[20px] border border-white/[0.1] shadow-[0_25px_50px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.1)];
+  }
+
+  .gradient-text {
+    @apply bg-linear-to-br from-[#d2bbff] to-[#4cd7f6] bg-clip-text text-transparent;
+  }
+
+  .glow-heading {
+    @apply [text-shadow:0_0_40px_rgba(124,58,237,0.5)];
+  }
+
+  .noise-overlay {
+    @apply fixed inset-0 pointer-events-none z-[9999] opacity-[0.03];
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  }
+}
