@@ -1,4 +1,4 @@
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { motion, useScroll, useSpring, useTransform, AnimatePresence } from 'motion/react';
 import { 
   ArrowRight, 
   Rocket, 
@@ -23,8 +23,101 @@ import {
   Star,
   Quote
 } from 'lucide-react';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { NeuralBackground } from './components/NeuralBackground';
+import { CustomCursor } from './components/CustomCursor';
+import { AmbientPulse } from './components/AmbientPulse';
+
+const ScrollProgress = () => {
+  const { scrollYProgress } = useScroll();
+  const scaleX = useSpring(scrollYProgress, {
+    stiffness: 100,
+    damping: 30,
+    restDelta: 0.001
+  });
+
+  return (
+    <motion.div
+      className="fixed top-0 left-0 right-0 h-[2px] bg-cyan-400 z-[10005] origin-left shadow-[0_0_10px_#06b6d4]"
+      style={{ scaleX }}
+    />
+  );
+};
+
+const FadeInSection = ({ children, className = "", id = "" }: { children: React.ReactNode, className?: string, id?: string }) => {
+  return (
+    <motion.section
+      id={id}
+      initial={{ opacity: 0, y: 40 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-100px" }}
+      transition={{ duration: 0.8, ease: "easeOut" }}
+      className={className}
+    >
+      {children}
+    </motion.section>
+  );
+};
+
+const StaggerContainer = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => {
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const item = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0 }
+  };
+
+  return (
+    <motion.div
+      variants={container}
+      initial="hidden"
+      whileInView="show"
+      viewport={{ once: true }}
+      className={className}
+    >
+      {React.Children.map(children, (child) => (
+        <motion.div variants={item}>{child}</motion.div>
+      ))}
+    </motion.div>
+  );
+};
+
+const FlickerHeading = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => {
+  const [flicker, setFlicker] = useState(false);
+
+  useEffect(() => {
+    const triggerFlicker = () => {
+      setFlicker(true);
+      setTimeout(() => setFlicker(false), 300);
+    };
+
+    const intervalId = setInterval(() => {
+      if (Math.random() > 0.5) {
+        triggerFlicker();
+      }
+    }, 10000); // Random check every 10s roughly
+
+    return () => clearInterval(intervalId);
+  }, []);
+
+  return (
+    <motion.div
+      animate={flicker ? { opacity: [1, 0.3, 1, 0.3, 1] } : {}}
+      transition={flicker ? { duration: 0.3, times: [0, 0.2, 0.4, 0.6, 1] } : {}}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+};
 
 const Nav = () => (
   <nav className="fixed top-0 w-full z-50 bg-surface/70 backdrop-blur-[20px] border-b border-white/10">
@@ -154,15 +247,18 @@ const Hero = () => {
 };
 
 const About = () => (
-  <section id="about" className="py-24 px-8 max-w-7xl mx-auto">
+    <FadeInSection id="about" className="py-24 px-8 max-w-7xl mx-auto">
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         whileInView={{ opacity: 1, scale: 1 }}
+        viewport={{ once: true }}
         transition={{ duration: 0.6 }}
       >
         <span className="text-[14px] font-display font-medium text-primary-container uppercase tracking-wider mb-4 block">The NovaCore Edge</span>
-        <h2 className="font-display text-4xl font-bold mb-6 glow-heading">High-Tier Performance Meets Pristine Design</h2>
+        <FlickerHeading>
+          <h2 className="font-display text-4xl font-bold mb-6 glow-heading">High-Tier Performance Meets Pristine Design</h2>
+        </FlickerHeading>
         <p className="text-lg text-on-surface-variant mb-8 leading-relaxed">
           Our focus is on three non-negotiables: clean aesthetics, lightning-fast delivery, and conversion-optimized architecture. We don't just build sites; we engineer digital growth vehicles that turn visitors into loyal customers.
         </p>
@@ -172,7 +268,7 @@ const About = () => (
         </div>
       </motion.div>
       
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+      <StaggerContainer className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <div className="glass-panel p-8 rounded-xl flex flex-col items-center text-center">
           <Rocket className="w-10 h-10 text-primary-container mb-4" />
           <span className="font-display text-4xl font-bold text-white">50+</span>
@@ -188,9 +284,9 @@ const About = () => (
           <span className="font-display text-4xl font-bold text-white">5-Day</span>
           <p className="text-sm font-display font-medium text-on-surface-variant uppercase tracking-wider">Average Turnaround</p>
         </div>
-      </div>
+      </StaggerContainer>
     </div>
-  </section>
+  </FadeInSection>
 );
 
 const ServiceCard = ({ icon: Icon, title, desc, extraClass = "" }) => (
@@ -211,14 +307,16 @@ const ServiceCard = ({ icon: Icon, title, desc, extraClass = "" }) => (
 );
 
 const Services = () => (
-  <section id="services" className="py-24 px-8 bg-surface-low/30 relative">
+  <FadeInSection id="services" className="py-24 px-8 bg-surface-low/30 relative">
     <div className="max-w-7xl mx-auto">
       <div className="text-center mb-16">
-        <h2 className="font-display text-4xl font-bold mb-4 glow-heading">Bespoke Solutions</h2>
+        <FlickerHeading>
+          <h2 className="font-display text-4xl font-bold mb-4 glow-heading">Bespoke Solutions</h2>
+        </FlickerHeading>
         <p className="text-on-surface-variant max-w-xl mx-auto">We provide the technological backbone for your digital ambition.</p>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <StaggerContainer className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         <ServiceCard 
           icon={Monitor} 
           title="Website Design & Development" 
@@ -245,9 +343,9 @@ const Services = () => (
           desc="Implementing intelligent workflows and custom LLM solutions to skyrocket your operational efficiency."
           extraClass="lg:col-span-2"
         />
-      </div>
+      </StaggerContainer>
     </div>
-  </section>
+  </FadeInSection>
 );
 
 const Portfolio = () => {
@@ -272,26 +370,25 @@ const Portfolio = () => {
   ];
 
   return (
-    <section id="work" className="py-24 px-8">
+    <FadeInSection id="work" className="py-24 px-8">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-end mb-16">
           <div>
             <span className="text-[14px] font-display font-medium text-primary-container uppercase tracking-wider mb-4 block">Our Portfolio</span>
-            <h2 className="font-display text-4xl font-bold glow-heading flex items-center">
-              <span className="text-green-400 font-mono text-3xl">{displayText}</span>
-              <span className="terminal-cursor w-2.5 h-8 bg-green-400 ml-2 animate-blink"></span>
-            </h2>
+            <FlickerHeading>
+              <h2 className="font-display text-4xl font-bold glow-heading flex items-center">
+                <span className="text-green-400 font-mono text-3xl">{displayText}</span>
+                <span className="terminal-cursor w-2.5 h-8 bg-green-400 ml-2 animate-blink"></span>
+              </h2>
+            </FlickerHeading>
           </div>
           <button className="text-secondary-container font-display font-medium hover:underline">View All Projects</button>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <StaggerContainer className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {projects.map((p, idx) => (
-            <motion.div
+            <div
               key={idx}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.1 }}
               className={`relative overflow-hidden glass-panel p-6 rounded-lg border-t-4 group hover:scale-[1.02] transition-all
                 ${p.color === 'purple' ? 'border-purple-500' : ''}
                 ${p.color === 'cyan' ? 'border-cyan-500' : ''}
@@ -299,7 +396,6 @@ const Portfolio = () => {
                 ${p.color === 'orange' ? 'border-orange-500' : ''}
               `}
             >
-              {/* Scanline Effect */}
               <div className="absolute inset-0 bg-linear-to-b from-transparent via-cyan-500/10 to-transparent pointer-events-none -top-full group-hover:animate-scan"></div>
               
               <div className="mb-4 flex justify-between items-start">
@@ -317,22 +413,24 @@ const Portfolio = () => {
                 <div>status: {p.status} ✓</div>
                 <div>{p.tag === 'WEB' ? 'performance' : p.tag === 'MARKETING' ? 'conversion' : p.tag === 'SOCIAL' ? 'reach' : 'efficiency'}: {p.metrics}</div>
               </div>
-            </motion.div>
+            </div>
           ))}
-        </div>
+        </StaggerContainer>
       </div>
-    </section>
+    </FadeInSection>
   );
 };
 
 const Contact = () => (
-  <section id="contact" className="py-24 px-8 max-w-7xl mx-auto">
+    <FadeInSection id="contact" className="py-24 px-8 max-w-7xl mx-auto">
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
       <div>
-        <h2 className="font-display text-4xl font-bold mb-6 glow-heading">Let's Craft Your Digital Future.</h2>
+        <FlickerHeading>
+          <h2 className="font-display text-4xl font-bold mb-6 glow-heading">Let's Craft Your Digital Future.</h2>
+        </FlickerHeading>
         <p className="text-lg text-on-surface-variant mb-12">Have a project in mind? We'd love to hear from you. Get in touch for a free consultation and audit.</p>
         
-        <div className="space-y-8">
+        <StaggerContainer className="space-y-8">
           {[
             { Icon: Mail, label: 'Email Us', value: 'hello@novacoredigital.com', color: 'text-primary-container' },
             { Icon: Phone, label: 'Call Us', value: '+49 123 456 7890', color: 'text-secondary-container' },
@@ -348,10 +446,15 @@ const Contact = () => (
               </div>
             </div>
           ))}
-        </div>
+        </StaggerContainer>
       </div>
       
-      <div className="glass-panel p-10 rounded-3xl border-white/10">
+      <motion.div 
+        initial={{ opacity: 0, x: 20 }}
+        whileInView={{ opacity: 1, x: 0 }}
+        viewport={{ once: true }}
+        className="glass-panel p-10 rounded-3xl border-white/10"
+      >
         <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
           <div>
             <label className="block text-[10px] uppercase tracking-[0.2em] font-bold mb-2 text-on-surface-variant">Full Name</label>
@@ -369,9 +472,9 @@ const Contact = () => (
             Send Message
           </button>
         </form>
-      </div>
+      </motion.div>
     </div>
-  </section>
+  </FadeInSection>
 );
 
 const Footer = () => (
@@ -416,9 +519,113 @@ const Footer = () => (
   </footer>
 );
 
+const HorizontalTestimonials = () => {
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  const { scrollYProgress } = useScroll({
+    target: sectionRef,
+    offset: ["start start", "end end"]
+  });
+
+  const x = useTransform(scrollYProgress, [0, 1], ["0%", "-80%"]);
+  const opacity = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
+  const progressWidth = useTransform(scrollYProgress, [0, 1], ["0%", "100%"]);
+
+  const testimonials = [
+    { name: 'Sarah Mitchell', role: 'Founder, Bloom Café', text: "NovaCore completely transformed our online presence. Our new site is not just beautiful; it's a lead magnet.", color: 'bg-primary-container/40' },
+    { name: 'Daniel Weber', role: 'CEO, FitZone Studio', text: "Working with them was the best decision for our growth strategy. The SEO and Social Media results exceeded every metric.", color: 'bg-secondary-container/40' },
+    { name: 'Aisha Khan', role: 'Marketing Manager, UrbanNest', text: "The AI automation tools they built for us saved my team over 20 hours a week. Their tech stack is truly from the future.", color: 'bg-tertiary-container/40' },
+    { name: 'James Wilson', role: 'Tech Lead, CryptoGrid', text: "The speed at which they delivered our complex dApp architecture was staggering. True partners in innovation.", color: 'bg-cyan-500/40' },
+    { name: 'Elena Rodriguez', role: 'Creative Director, VibeLabel', text: "They just get modern aesthetics. Our brand identity feels years ahead of the competition now.", color: 'bg-purple-500/40' },
+    { name: 'Marcus Chen', role: 'Operations, GlobalLogistics', text: "The ROI we've seen since launching our new portal has been incredible. 5-star team all around.", color: 'bg-orange-500/40' }
+  ];
+
+  if (isMobile) {
+    return (
+      <section id="testimonials-section" className="py-24 px-8 bg-surface-low/30">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="font-display text-4xl font-bold text-center mb-16 glow-heading">What Our Clients Say</h2>
+          <div className="flex flex-col gap-8">
+            {testimonials.map((t, idx) => (
+              <div key={idx} className="glass-panel p-8 rounded-2xl relative">
+                <Quote className="text-primary-container w-12 h-12 opacity-10 absolute top-4 right-4" />
+                <div className="flex gap-1 text-secondary-container mb-4">
+                  {[1,2,3,4,5].map(i => <Star key={i} className="w-4 h-4 fill-secondary-container" />)}
+                </div>
+                <p className="italic text-on-surface-variant mb-8 line-clamp-4">"{t.text}"</p>
+                <div className="flex items-center gap-4">
+                  <div className={`w-12 h-12 rounded-full ${t.color}`}></div>
+                  <div>
+                    <p className="font-bold text-white text-sm">{t.name}</p>
+                    <p className="text-[10px] text-on-surface-variant uppercase tracking-widest font-bold">{t.role}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <div id="testimonials-wrapper" ref={sectionRef} className="relative h-[300vh]">
+      <div id="testimonials-sticky" className="sticky top-0 h-screen flex flex-col justify-center overflow-hidden bg-surface-low/30">
+        <motion.div style={{ opacity }} className="text-center mb-12 absolute top-20 left-1/2 -translate-x-1/2 w-full px-8">
+          <h2 className="font-display text-4xl font-bold glow-heading">What Our Clients Say</h2>
+          <p className="text-on-surface-variant mt-4">Discover the impact of NovaCore partnership.</p>
+        </motion.div>
+
+        <div className="px-8">
+          <motion.div id="testimonials-track" style={{ x }} className="flex gap-10 w-fit will-change-transform">
+            {testimonials.map((t, idx) => (
+              <div 
+                key={idx} 
+                className="min-w-[80vw] max-w-[600px] h-fit bg-white/5 backdrop-blur-[20px] border border-white/10 p-10 rounded-[20px] relative shrink-0"
+              >
+                <Quote className="text-primary-container w-16 h-16 opacity-10 absolute top-6 right-6" />
+                <div className="flex gap-1 text-secondary-container mb-6">
+                  {[1,2,3,4,5].map(i => <Star key={i} className="w-5 h-5 fill-secondary-container" />)}
+                </div>
+                <p className="italic text-xl text-on-surface-variant mb-12 leading-relaxed">"{t.text}"</p>
+                <div className="flex items-center gap-6">
+                  <div className={`w-16 h-16 rounded-full ${t.color} shadow-lg`}></div>
+                  <div>
+                    <p className="font-bold text-white text-lg">{t.name}</p>
+                    <p className="text-xs text-on-surface-variant uppercase tracking-[0.2em] font-bold mt-1">{t.role}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </motion.div>
+        </div>
+
+        <div id="h-progress-bar" className="absolute bottom-20 left-1/2 -translate-x-1/2 w-[200px] h-[3px] bg-white/10 rounded-full overflow-hidden">
+          <motion.div 
+            id="h-progress-fill" 
+            style={{ width: progressWidth }} 
+            className="h-full bg-linear-to-r from-[#7C3AED] to-[#06B6D4] shadow-[0_0_10px_rgba(124,58,237,0.5)]"
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function App() {
   return (
     <div className="min-h-screen relative">
+      <CustomCursor />
+      <ScrollProgress />
+      <AmbientPulse />
       <NeuralBackground />
       <div className="noise-overlay"></div>
       
@@ -453,38 +660,7 @@ export default function App() {
         <Services />
         <Portfolio />
 
-        {/* Testimonials */}
-        <section className="py-24 px-8 bg-surface-low/30">
-          <div className="max-w-7xl mx-auto">
-            <h2 className="font-display text-4xl font-bold text-center mb-16 glow-heading">Client Success Stories</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {[
-                { name: 'Sarah Mitchell', role: 'Founder, Bloom Café', text: "NovaCore completely transformed our online presence. Our new site is not just beautiful; it's a lead magnet.", color: 'bg-primary-container/40' },
-                { name: 'Daniel Weber', role: 'CEO, FitZone Studio', text: "Working with them was the best decision for our growth strategy. The SEO and Social Media results exceeded every metric.", color: 'bg-secondary-container/40' },
-                { name: 'Aisha Khan', role: 'Marketing Manager, UrbanNest', text: "The AI automation tools they built for us saved my team over 20 hours a week. Their tech stack is truly from the future.", color: 'bg-tertiary-container/40' }
-              ].map((t, idx) => (
-                <motion.div 
-                  key={idx}
-                  whileHover={{ y: -5 }}
-                  className="glass-panel p-8 rounded-2xl relative"
-                >
-                  <Quote className="text-primary-container w-12 h-12 opacity-10 absolute top-4 right-4" />
-                  <div className="flex gap-1 text-secondary-container mb-4">
-                    {[1,2,3,4,5].map(i => <Star key={i} className="w-4 h-4 fill-secondary-container" />)}
-                  </div>
-                  <p className="italic text-on-surface-variant mb-8 line-clamp-4">"{t.text}"</p>
-                  <div className="flex items-center gap-4">
-                    <div className={`w-12 h-12 rounded-full ${t.color}`}></div>
-                    <div>
-                      <p className="font-bold text-white text-sm">{t.name}</p>
-                      <p className="text-[10px] text-on-surface-variant uppercase tracking-widest font-bold">{t.role}</p>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
+        <HorizontalTestimonials />
 
         <Contact />
       </main>
